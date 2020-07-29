@@ -6,9 +6,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
 
@@ -22,7 +24,7 @@ public class ItemClientController {
     private WebClient webClient;
 
     @PostConstruct
-    private void init(){
+    private void init() {
         webClient = WebClient.create(itemServerUrl);
     }
 
@@ -40,8 +42,26 @@ public class ItemClientController {
         return webClient.get().uri(ItemConstants.ITEM_END_POINT_V1)
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
-                .flatMapMany(clientResponse->clientResponse.bodyToFlux(Item.class))
+                .flatMapMany(clientResponse -> clientResponse.bodyToFlux(Item.class))
                 .log("Items in Client Project exchange");
+    }
+
+    @GetMapping("/client/retrieve/{id}")
+    public Mono<Item> getOneItemUsingRetrieve(@PathVariable String id) {
+        return webClient.get().uri(ItemConstants.ITEM_END_POINT_V1 + "/{id}", id)
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(Item.class)
+                .log("Client Project retrieve Single Item");
+    }
+
+    @GetMapping("/client/exchange/{id}")
+    public Mono<Item> getOneItemUsingExchange(@PathVariable String id) {
+        return webClient.get().uri(ItemConstants.ITEM_END_POINT_V1 + "/{id}", id)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .flatMap(clientResponse -> clientResponse.bodyToMono(Item.class))
+                .log("Client Project exchange Single Item");
     }
 
 }
