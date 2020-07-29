@@ -93,4 +93,13 @@ public class ItemClientController {
                 .log("Client Project update Item");
     }
 
+    @DeleteMapping("/client/deleteItem/{id}")
+    public Mono<Item> deleteItem(@PathVariable String id) {
+        return webClient.delete().uri(ItemConstants.ITEM_END_POINT_V1 + "/{id}", id)
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(Item.class)
+                .log("Client Project delete Item");
+    }
+
 }
