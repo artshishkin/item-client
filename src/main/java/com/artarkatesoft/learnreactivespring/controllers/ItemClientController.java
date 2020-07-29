@@ -83,4 +83,14 @@ public class ItemClientController {
                 .log("Client Project post new Item");
     }
 
+    @PutMapping("/client/updateItem/{id}")
+    public Mono<Item> createItem(@RequestBody Item item, @PathVariable String id) {
+        return webClient.put().uri(ItemConstants.ITEM_END_POINT_V1 + "/{id}", id)
+                .accept(MediaType.APPLICATION_JSON)
+                .bodyValue(item)
+                .retrieve()
+                .bodyToMono(Item.class)
+                .log("Client Project update Item");
+    }
+
 }
