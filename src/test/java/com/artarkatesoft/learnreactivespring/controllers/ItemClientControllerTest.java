@@ -207,7 +207,28 @@ class ItemClientControllerTest {
     }
 
     @Test
-    void testCreateItem() {
+    void updateItem() throws JsonProcessingException, InterruptedException {
+        //given
+        mockBackEnd.enqueue(new MockResponse()
+                .setBody(objectMapper.writeValueAsString(defaultItem))
+                .addHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE));
+        Item itemSent = new Item("MyId", "descToSet", 9.01);
+        //when
+        Mono<Item> itemMono = controller.updateItem(itemSent,"MyId");
+
+        //then
+        StepVerifier.create(itemMono)
+                .expectSubscription()
+                .expectNext(defaultItem)
+                .verifyComplete();
+
+        RecordedRequest recordedRequest = mockBackEnd.takeRequest();
+
+        assertThat(recordedRequest.getMethod()).isEqualTo("PUT");
+        assertThat(recordedRequest.getPath()).isEqualTo(ITEM_END_POINT_V1+"/MyId");
+        String bodyString = recordedRequest.getBody().readString(StandardCharsets.UTF_8);
+        Item itemRead = objectMapper.readValue(bodyString, Item.class);
+        assertThat(itemRead).isEqualTo(itemSent);
     }
 
     @Test
