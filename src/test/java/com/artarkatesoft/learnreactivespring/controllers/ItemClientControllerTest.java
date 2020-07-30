@@ -1,6 +1,5 @@
 package com.artarkatesoft.learnreactivespring.controllers;
 
-import com.artarkatesoft.learnreactivespring.constants.ItemConstants;
 import com.artarkatesoft.learnreactivespring.domain.Item;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.io.IOException;
@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.artarkatesoft.learnreactivespring.constants.ItemConstants.*;
+import static com.artarkatesoft.learnreactivespring.constants.ItemConstants.ITEM_END_POINT_V1;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
@@ -111,11 +111,45 @@ class ItemClientControllerTest {
     }
 
     @Test
-    void getOneItemUsingRetrieve() {
+    void getOneItemUsingRetrieve() throws JsonProcessingException, InterruptedException {
+        //given
+        mockBackEnd.enqueue(new MockResponse()
+                .setBody(objectMapper.writeValueAsString(defaultItem))
+                .addHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE));
+        //when
+        Mono<Item> itemMono = controller.getOneItemUsingRetrieve("MyId");
+
+        //then
+        StepVerifier.create(itemMono)
+                .expectSubscription()
+                .expectNext(defaultItem)
+                .verifyComplete();
+
+        RecordedRequest recordedRequest = mockBackEnd.takeRequest();
+
+        assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        assertThat(recordedRequest.getPath()).isEqualTo(ITEM_END_POINT_V1 + "/MyId");
     }
 
     @Test
-    void getOneItemUsingExchange() {
+    void getOneItemUsingExchange() throws JsonProcessingException, InterruptedException {
+        //given
+        mockBackEnd.enqueue(new MockResponse()
+                .setBody(objectMapper.writeValueAsString(defaultItem))
+                .addHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE));
+        //when
+        Mono<Item> itemMono = controller.getOneItemUsingExchange("MyId");
+
+        //then
+        StepVerifier.create(itemMono)
+                .expectSubscription()
+                .expectNext(defaultItem)
+                .verifyComplete();
+
+        RecordedRequest recordedRequest = mockBackEnd.takeRequest();
+
+        assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        assertThat(recordedRequest.getPath()).isEqualTo(ITEM_END_POINT_V1 + "/MyId");
     }
 
     @Test
