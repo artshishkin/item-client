@@ -10,8 +10,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import javax.annotation.PostConstruct;
-
 @RestController
 @RequiredArgsConstructor
 public class ItemClientController {
@@ -94,11 +92,11 @@ public class ItemClientController {
     }
 
     @DeleteMapping("/client/deleteItem/{id}")
-    public Mono<Item> deleteItem(@PathVariable String id) {
+    public Mono<Void> deleteItem(@PathVariable String id) {
         return webClient.delete().uri(ItemConstants.ITEM_END_POINT_V1 + "/{id}", id)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
-                .bodyToMono(Item.class)
+                .bodyToMono(Void.class)
                 .log("Client Project delete Item");
     }
 
