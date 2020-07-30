@@ -17,6 +17,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -25,6 +26,7 @@ import static com.artarkatesoft.learnreactivespring.constants.ItemConstants.ITEM
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
+import static org.springframework.http.HttpHeaders.LOCATION;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @ExtendWith(MockitoExtension.class)
@@ -153,7 +155,29 @@ class ItemClientControllerTest {
     }
 
     @Test
-    void postOneItem() {
+    void postOneItem() throws JsonProcessingException, InterruptedException {
+        //given
+        mockBackEnd.enqueue(new MockResponse()
+                .setBody(objectMapper.writeValueAsString(defaultItem))
+                .addHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
+                .addHeader(LOCATION, "http://localhost:8080/v1/item/MyId"));
+        Item itemSent = new Item(null, "descToSet", 9.01);
+        //when
+        Mono<Item> itemMono = controller.postOneItem("descToSet", 9.01);
+
+        //then
+        StepVerifier.create(itemMono)
+                .expectSubscription()
+                .expectNext(defaultItem)
+                .verifyComplete();
+
+        RecordedRequest recordedRequest = mockBackEnd.takeRequest();
+
+        assertThat(recordedRequest.getMethod()).isEqualTo("POST");
+        assertThat(recordedRequest.getPath()).isEqualTo(ITEM_END_POINT_V1);
+        String bodyString = recordedRequest.getBody().readString(StandardCharsets.UTF_8);
+        Item itemRead = objectMapper.readValue(bodyString, Item.class);
+        assertThat(itemRead).isEqualTo(itemSent);
     }
 
     @Test
