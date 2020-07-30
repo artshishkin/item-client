@@ -16,13 +16,13 @@ import javax.annotation.PostConstruct;
 @RequiredArgsConstructor
 public class ItemClientController {
 
-    @Value("${itemclient.itemserver.url}")
     private String itemServerUrl;
 
     private WebClient webClient;
 
-    @PostConstruct
-    private void init() {
+    @Value("${itemclient.itemserver.url}")
+    public void setItemServerUrl(String itemServerUrl) {
+        this.itemServerUrl = itemServerUrl;
         webClient = WebClient.create(itemServerUrl);
     }
 
