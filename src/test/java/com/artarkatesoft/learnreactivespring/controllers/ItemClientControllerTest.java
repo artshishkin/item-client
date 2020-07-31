@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -28,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 import static org.springframework.http.HttpHeaders.LOCATION;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+import static org.springframework.http.MediaType.TEXT_PLAIN;
 
 @ExtendWith(MockitoExtension.class)
 class ItemClientControllerTest {
@@ -248,5 +250,76 @@ class ItemClientControllerTest {
 
         assertThat(recordedRequest.getMethod()).isEqualTo("DELETE");
         assertThat(recordedRequest.getPath()).isEqualTo(ITEM_END_POINT_V1 + "/MyId");
+    }
+
+    @Test
+    void errorEndpointUsingRetrieve() throws JsonProcessingException, InterruptedException {
+        //given
+        String errorMessage = "Runtime Exception Occurred";
+        mockBackEnd.enqueue(new MockResponse()
+                .setResponseCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .setBody(errorMessage)
+                .addHeader(CONTENT_TYPE, TEXT_PLAIN));
+        //when
+        Flux<Item> itemFlux = controller.exchangeError();
+
+        //then
+        StepVerifier.create(itemFlux)
+                .expectSubscription()
+                .verifyError(RuntimeException.class);
+
+        RecordedRequest recordedRequest = mockBackEnd.takeRequest();
+
+        assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        assertThat(recordedRequest.getPath()).isEqualTo(ITEM_END_POINT_V1 + "/runtimeException");
+    }
+
+    @Test
+    void errorEndpointUsingRetrieve1() throws JsonProcessingException, InterruptedException {
+        //given
+        String errorMessage = "Runtime Exception Occurred";
+        mockBackEnd.enqueue(new MockResponse()
+                .setResponseCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .setBody(errorMessage)
+                .addHeader(CONTENT_TYPE, TEXT_PLAIN));
+        //when
+        Flux<Item> itemFlux = controller.exchangeError();
+
+        //then
+        StepVerifier.create(itemFlux)
+                .expectSubscription()
+                .verifyErrorMessage(errorMessage);
+
+        RecordedRequest recordedRequest = mockBackEnd.takeRequest();
+
+        assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        assertThat(recordedRequest.getPath()).isEqualTo(ITEM_END_POINT_V1 + "/runtimeException");
+    }
+
+
+    @Test
+    void errorEndpointUsingRetrieve2() throws JsonProcessingException, InterruptedException {
+        //given
+        String errorMessage = "Runtime Exception Occurred";
+        mockBackEnd.enqueue(new MockResponse()
+                .setResponseCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .setBody(errorMessage)
+                .addHeader(CONTENT_TYPE, TEXT_PLAIN));
+        //when
+        Flux<Item> itemFlux = controller.exchangeError();
+
+        //then
+        StepVerifier.create(itemFlux)
+                .expectSubscription()
+                .verifyErrorSatisfies(
+                        ex -> assertThat(ex).
+                                hasMessage(errorMessage).
+                                isInstanceOf(RuntimeException.class)
+                );
+
+        RecordedRequest recordedRequest = mockBackEnd.takeRequest();
+
+        assertThat(recordedRequest.getMethod()).isEqualTo("GET");
+        assertThat(recordedRequest.getPath()).isEqualTo(ITEM_END_POINT_V1 + "/runtimeException");
     }
 }
