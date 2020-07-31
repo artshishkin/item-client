@@ -118,4 +118,22 @@ public class ItemClientController {
                 .bodyToFlux(Item.class);
     }
 
+    @GetMapping("/client/exchange/error")
+    public Flux<Item> exchangeError() {
+        return webClient.get().uri(ITEM_END_POINT_V1 + "/runtimeException")
+                .accept(APPLICATION_JSON)
+                .exchange()
+                .flatMapMany(clientResponse -> {
+                    if (clientResponse.statusCode().is5xxServerError()) {
+                        Mono<String> messageMono = clientResponse.bodyToMono(String.class);
+                        return messageMono.flatMap(message -> {
+                            log.error("Error message is: " + message);
+                            return Mono.error(new RuntimeException(message));
+                        });
+                    } else {
+                        return clientResponse.bodyToFlux(Item.class);
+                    }
+                });
+    }
+
 }
