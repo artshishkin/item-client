@@ -9,3 +9,8 @@ Author Artem Shyshkin
 
 ### 15: Build Non Blocking Client using WebClient 
 
+---
+
+### 18: Build Non Blocking Client using WebClient - Exception Handling
+
+---
