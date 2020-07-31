@@ -28,8 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 import static org.springframework.http.HttpHeaders.LOCATION;
-import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
-import static org.springframework.http.MediaType.TEXT_PLAIN;
+import static org.springframework.http.MediaType.*;
 
 @ExtendWith(MockitoExtension.class)
 class ItemClientControllerTest {
@@ -253,7 +252,7 @@ class ItemClientControllerTest {
     }
 
     @Test
-    void errorEndpointUsingRetrieve() throws JsonProcessingException, InterruptedException {
+    void errorEndpointUsingRetrieve_text() throws JsonProcessingException, InterruptedException {
         //given
         String errorMessage = "Runtime Exception Occurred";
         mockBackEnd.enqueue(new MockResponse()
@@ -261,12 +260,16 @@ class ItemClientControllerTest {
                 .setBody(errorMessage)
                 .addHeader(CONTENT_TYPE, TEXT_PLAIN));
         //when
-        Flux<Item> itemFlux = controller.exchangeError();
+        Flux<Item> itemFlux = controller.retrieveError();
 
         //then
         StepVerifier.create(itemFlux)
                 .expectSubscription()
-                .verifyError(RuntimeException.class);
+                .verifyErrorSatisfies(
+                        ex -> assertThat(ex).
+                                hasMessage(errorMessage).
+                                isInstanceOf(RuntimeException.class)
+                );
 
         RecordedRequest recordedRequest = mockBackEnd.takeRequest();
 
@@ -275,20 +278,24 @@ class ItemClientControllerTest {
     }
 
     @Test
-    void errorEndpointUsingRetrieve1() throws JsonProcessingException, InterruptedException {
+    void errorEndpointUsingRetrieve_json() throws JsonProcessingException, InterruptedException {
         //given
         String errorMessage = "Runtime Exception Occurred";
         mockBackEnd.enqueue(new MockResponse()
                 .setResponseCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .setBody(errorMessage)
-                .addHeader(CONTENT_TYPE, TEXT_PLAIN));
+                .addHeader(CONTENT_TYPE, APPLICATION_JSON));
         //when
-        Flux<Item> itemFlux = controller.exchangeError();
+        Flux<Item> itemFlux = controller.retrieveError();
 
         //then
         StepVerifier.create(itemFlux)
                 .expectSubscription()
-                .verifyErrorMessage(errorMessage);
+                .verifyErrorSatisfies(
+                        ex -> assertThat(ex).
+                                hasMessage(errorMessage).
+                                isInstanceOf(RuntimeException.class)
+                );
 
         RecordedRequest recordedRequest = mockBackEnd.takeRequest();
 
@@ -296,15 +303,14 @@ class ItemClientControllerTest {
         assertThat(recordedRequest.getPath()).isEqualTo(ITEM_END_POINT_V1 + "/runtimeException");
     }
 
-
     @Test
-    void errorEndpointUsingRetrieve2() throws JsonProcessingException, InterruptedException {
+    void errorEndpointUsingExchange_json() throws JsonProcessingException, InterruptedException {
         //given
         String errorMessage = "Runtime Exception Occurred";
         mockBackEnd.enqueue(new MockResponse()
                 .setResponseCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .setBody(errorMessage)
-                .addHeader(CONTENT_TYPE, TEXT_PLAIN));
+                .addHeader(CONTENT_TYPE, APPLICATION_JSON));
         //when
         Flux<Item> itemFlux = controller.exchangeError();
 
