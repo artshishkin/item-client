@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -100,6 +101,30 @@ public class ItemClientController {
         return webClient.delete().uri(ITEM_END_POINT_V1 + "/{id}", id)
                 .accept(APPLICATION_JSON)
                 .retrieve()
+//                .onStatus(        //The same as default behavior
+//                        HttpStatus.NOT_FOUND::equals,
+//                        ClientResponse::createException
+//                )
+//                .onStatus(        //Changing error message
+//                        HttpStatus.NOT_FOUND::equals,
+//                        clientResponse -> Mono.error(new RuntimeException("There was error while deleting"))
+//                )
+                .onStatus(          //Change Message and Status
+                        HttpStatus.NOT_FOUND::equals,
+                        clientResponse -> clientResponse.createException()
+                                .map(exc ->
+                                        new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND,
+                                                "Client received an error: " + exc.getMessage(),
+                                                exc)
+                                )
+                )
+                .onStatus(
+                        HttpStatus::is5xxServerError,
+                        clientResponse -> clientResponse
+                                .bodyToMono(String.class)
+                                .map(RuntimeException::new)
+                )
                 .bodyToMono(Void.class)
                 .log("Client Project delete Item");
     }
