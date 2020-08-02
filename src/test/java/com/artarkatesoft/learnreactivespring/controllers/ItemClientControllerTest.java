@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -233,7 +234,7 @@ class ItemClientControllerTest {
     }
 
     @Test
-    void deleteItem() throws InterruptedException {
+    void deleteItem_Present() throws InterruptedException {
         //given
         mockBackEnd.enqueue(new MockResponse()
                 .addHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE));
@@ -244,6 +245,54 @@ class ItemClientControllerTest {
         StepVerifier.create(itemMono)
                 .expectSubscription()
                 .verifyComplete();
+
+        RecordedRequest recordedRequest = mockBackEnd.takeRequest();
+
+        assertThat(recordedRequest.getMethod()).isEqualTo("DELETE");
+        assertThat(recordedRequest.getPath()).isEqualTo(ITEM_END_POINT_V1 + "/MyId");
+    }
+
+    @Test
+    void deleteItem_Absent() throws InterruptedException {
+        //given
+        mockBackEnd.enqueue(new MockResponse()
+                .setResponseCode(HttpStatus.NOT_FOUND.value())
+                .addHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE));
+        //when
+        Mono<Void> itemMono = controller.deleteItem("MyId");
+
+        //then
+        StepVerifier.create(itemMono)
+                .verifyErrorSatisfies(
+                        ex -> assertThat(ex)
+                                .hasMessageContaining("Client received an error: ")
+                                .isInstanceOf(ResponseStatusException.class)
+                );
+
+        RecordedRequest recordedRequest = mockBackEnd.takeRequest();
+
+        assertThat(recordedRequest.getMethod()).isEqualTo("DELETE");
+        assertThat(recordedRequest.getPath()).isEqualTo(ITEM_END_POINT_V1 + "/MyId");
+    }
+
+    @Test
+    void deleteItem_ServerError() throws InterruptedException {
+        //given
+        String errorMessage = "Some Server Error";
+        mockBackEnd.enqueue(new MockResponse()
+                .setResponseCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .setBody(errorMessage)
+                .addHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE));
+        //when
+        Mono<Void> itemMono = controller.deleteItem("MyId");
+
+        //then
+        StepVerifier.create(itemMono)
+                .verifyErrorSatisfies(
+                        ex -> assertThat(ex)
+                                .hasMessage(errorMessage)
+                                .isInstanceOf(RuntimeException.class)
+                );
 
         RecordedRequest recordedRequest = mockBackEnd.takeRequest();
 
